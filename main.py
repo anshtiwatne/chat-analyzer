@@ -35,15 +35,15 @@ class User:
         self.name = name
 
         messages = []
-        for sender in df["sender"]:
+        for i, sender in enumerate(df["sender"]):
             if sender != self.name: continue
-            messages.append(df["msg"][df["sender"].index(sender)])
+            messages.append(df["msg"][i])
 
         self.messages = messages
-        self.average_msg_length = sum(len(msg) for msg in self.messages()) / len(self.messages())
-        self.longest_msg_length = max(len(msg) for msg in self.messages())
-        self.words_typed = sum(len(msg.split()) for msg in self.messages())
-        self.top_words = sorted(set(word for msg in self.messages() for word in msg.split()), key=lambda x: x.lower())
+        self.average_msg_length = sum(len(msg) for msg in self.messages) / len(self.messages)
+        self.longest_msg = max(self.messages, key=len)
+        self.words_typed = sum(len(msg.split()) for msg in self.messages)
+        self.top_words = sorted(set(word for msg in self.messages for word in msg.split()), key=lambda x: x.lower())
         # we could add a few more of these, like time of day most texted, etc.
 
     @property
@@ -53,3 +53,6 @@ class User:
         """
 
         return self.name
+
+ansh = User("Ansh")
+print(ansh.top_words)
