@@ -53,6 +53,3 @@ class User:
         """
 
         return self.name
-
-ansh = User("Ansh")
-print(ansh.top_words)
