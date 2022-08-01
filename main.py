@@ -44,8 +44,9 @@ class User:
         self.longest_msg_length = max(len(msg) for msg in self.messages())
         self.words_typed = sum(len(msg.split()) for msg in self.messages())
         self.top_words = sorted(set(word for msg in self.messages() for word in msg.split()), key=lambda x: x.lower())
+        # we could add a few more of these, like time of day most texted, etc.
 
-
+    @property
     def get_name(self):
         """
         Returns the user's name
