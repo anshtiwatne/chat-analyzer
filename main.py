@@ -1,6 +1,5 @@
 """Script to analyze WhatsApp chats"""
 
-import dataclasses
 from datetime import datetime as dt
 import re
 import emoji
@@ -27,24 +26,24 @@ def frame_data(path: str):
 class User:
     """Class to represent a user"""
 
-    def __init__(self, username: str, messages: list[str] = []):
+    def __init__(self, username: str, df: pd.DataFrame):
 
         self.username = username
-        self.messages = messages
-
         self.longest_msg = ""
-        self.num_messages = self.num_words = self.num_emojis = 0
-        self.word_freq = self.emoji_freq = {}
+        self.num_messages, self.num_words, self.num_emojis = 0, 0, 0
+        self.word_freq, self.emoji_freq = {}, {}
+        self.hour_freq = {h: 0 for h in range(24)}
 
-        for msg in self.messages:
+        for i, row in df.loc[df["user"] == username].iterrows():
+            timestamp, msg = row["timestamp"], row["message"]
             self.num_messages += 1
-            if not len(msg) > len(self.longest_msg): continue
-            self.longest_msg = msg
+            if len(msg) > len(self.longest_msg): self.longest_msg = msg
 
             for word in msg.split():
                 self.num_words += 1
-                if word in self.word_freq: self.word_freq[word] += 1
-                else: self.word_freq[word] = 1
+                if not emoji.is_emoji(word):
+                    if word in self.word_freq: self.word_freq[word] += 1
+                    else: self.word_freq[word] = 1
 
                 for char in word:
                     if not emoji.is_emoji(char): continue
@@ -52,27 +51,18 @@ class User:
                     if char in self.emoji_freq: self.emoji_freq[char] += 1
                     else: self.emoji_freq[char] = 1
 
+            hour = timestamp.hour
+            self.hour_freq[hour] += 1
+
         if self.num_messages:
             self.avg_msg_len = self.num_words / self.num_messages
         self.word_freq = dict(
             sorted(self.word_freq.items(), key=lambda x: x[1], reverse=True))
         self.emoji_freq = dict(
             sorted(self.emoji_freq.items(), key=lambda x: x[1], reverse=True))
-
-
-def populate_user_data():
-    """Populates the user data"""
-
-    df = frame_data("testchat.txt")
-    users = [User(user) for user in df["user"].unique()]
-
-    for i, row in df.iterrows():
-        for user in users:
-            if user.username != row["user"]: continue
-            user.messages.append(row["message"])
-            break
-    print(users[0].messages)
+        self.hour_freq = dict(
+            sorted(self.hour_freq.items(), key=lambda x: x))
 
 
 if __name__ == "__main__":
-    ...
+    print(User("Ansh", frame_data("testchat.txt")).hour_freq)
