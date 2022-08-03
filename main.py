@@ -3,6 +3,7 @@
 from datetime import datetime as dt
 import re
 import emoji
+import matplotlib.pyplot as plt
 import pandas as pd
 
 
@@ -45,11 +46,11 @@ class User:
                     if word in self.word_freq: self.word_freq[word] += 1
                     else: self.word_freq[word] = 1
 
-                for char in word:
-                    if not emoji.is_emoji(char): continue
-                    self.num_emojis += 1
-                    if char in self.emoji_freq: self.emoji_freq[char] += 1
-                    else: self.emoji_freq[char] = 1
+                    for char in word:
+                        if not emoji.is_emoji(char): continue
+                        self.num_emojis += 1
+                        if char in self.emoji_freq: self.emoji_freq[char] += 1
+                        else: self.emoji_freq[char] = 1
 
             hour = timestamp.hour
             self.hour_freq[hour] += 1
@@ -60,9 +61,9 @@ class User:
             sorted(self.word_freq.items(), key=lambda x: x[1], reverse=True))
         self.emoji_freq = dict(
             sorted(self.emoji_freq.items(), key=lambda x: x[1], reverse=True))
-        self.hour_freq = dict(
-            sorted(self.hour_freq.items(), key=lambda x: x))
+        self.hour_freq = dict(sorted(self.hour_freq.items(), key=lambda x: x))
 
 
 if __name__ == "__main__":
-    print(User("Ansh", frame_data("testchat.txt")).hour_freq)
+    df = frame_data("testchat.txt")
+    ansh = User("Ansh", df)
