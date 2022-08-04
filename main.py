@@ -30,10 +30,7 @@ def frame_data(path: str):
 class User:
     """Class to represent a user"""
 
-    def __init__(self,
-                 username: str,
-                 df: pd.DataFrame,
-                 color: str = Fore.RESET):
+    def __init__(self, username: str, df: pd.DataFrame, color: str = Fore.RESET):
 
         self.username = username
         self.color = color
@@ -48,6 +45,7 @@ class User:
             if len(msg) > len(self.longest_msg): self.longest_msg = msg
 
             for word in msg.split():
+                word = word.strip(r"\.\,\!\?\;\:\(\)\[\]\{\}").lower()
                 self.num_words += 1
                 if not emoji.is_emoji(word):
                     if word in self.word_freq: self.word_freq[word] += 1
@@ -85,6 +83,7 @@ Avg msg length: {self.color}{self.avg_msg_len:.2f} words{Fore.RESET}
 Longest message: {self.color}{len(self.longest_msg)} chars{Fore.RESET}
 Words sent: {self.color}{self.num_words}{Fore.RESET}
 Top words: {self.color}{f"{Fore.RESET}, {self.color}".join(list(self.word_freq)[:5])}{Fore.RESET}
+Emojis sent: {self.color}{self.num_emojis}{Fore.RESET}
 Top emojis: {top_emojis}
 Most active at: {self.color}{top_hour}{Fore.RESET}""")
 
