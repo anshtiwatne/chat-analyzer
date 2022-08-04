@@ -1,12 +1,13 @@
 """Script to analyze WhatsApp chats"""
 
+from collections import Counter
 from datetime import datetime as dt
 import re
 from colorama import Fore
 import colorama
 import emoji
 import pandas as pd
-import termgraph as tg
+import termgraph.termgraph as tg
 
 
 def frame_data(path: str):
@@ -62,11 +63,17 @@ class User:
 
         if self.num_messages:
             self.avg_msg_len = self.num_words / self.num_messages
-        self.word_freq = dict(
-            sorted(self.word_freq.items(), key=lambda x: x[1], reverse=True))
-        self.emoji_freq = dict(
-            sorted(self.emoji_freq.items(), key=lambda x: x[1], reverse=True))
         self.hour_freq = dict(sorted(self.hour_freq.items(), key=lambda x: x))
+
+    def graph_freq(self, freq: dict, total: int, padding: int = 8, scale: int = 100):
+        """Draws a ascii graph for frequencies"""
+
+        freq = dict(sorted(freq.items(), key=lambda x: x[1], reverse=True))
+        graph = ""
+        for key in list(freq)[:5]:
+            len_line = int(round(freq[key] / total * scale))
+            graph += f"{key:<{padding}} | {self.color}{'▇'*len_line}{Fore.RESET} {freq[key]}\n"
+        return graph
 
     def __repr__(self):
         top_emojis = ""
@@ -76,16 +83,16 @@ class User:
         top_hour = max(self.hour_freq.keys(), key=(lambda freq: self.hour_freq[freq]))
         top_hour = dt.strptime(f"{top_hour}", "%H").strftime("%I:%M %p")
 
-        return (f"""{self.color}{self.username}
-{Fore.RESET}{'='*42}
+        return (f"""{self.username.upper()}{self.color}\n{'='*32}{Fore.RESET}
 Messages sent: {self.color}{self.num_messages}{Fore.RESET}
 Avg msg length: {self.color}{self.avg_msg_len:.2f} words{Fore.RESET}
 Longest message: {self.color}{len(self.longest_msg)} chars{Fore.RESET}
 Words sent: {self.color}{self.num_words}{Fore.RESET}
-Top words: {self.color}{f"{Fore.RESET}, {self.color}".join(list(self.word_freq)[:5])}{Fore.RESET}
 Emojis sent: {self.color}{self.num_emojis}{Fore.RESET}
-Top emojis: {top_emojis}
-Most active at: {self.color}{top_hour}{Fore.RESET}""")
+\nTOP WORDS:\n{self.graph_freq(self.word_freq, self.num_words, scale=100)}
+\nTOP EMOJIS:\n{self.graph_freq(self.emoji_freq, self.num_emojis, padding=1)}
+Most active at: {self.color}{top_hour}{Fore.RESET}
+Avg msg sentiment: to do""")
 
 
 def draw(df: pd.DataFrame):
