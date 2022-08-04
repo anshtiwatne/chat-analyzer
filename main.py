@@ -77,7 +77,7 @@ class User:
         top_hour = dt.strptime(f"{top_hour}", "%H").strftime("%I:%M %p")
 
         return (f"""{self.color}{self.username}
-{Fore.RESET}{'⎯'*32}
+{Fore.RESET}{'='*42}
 Messages sent: {self.color}{self.num_messages}{Fore.RESET}
 Avg msg length: {self.color}{self.avg_msg_len:.2f} words{Fore.RESET}
 Longest message: {self.color}{len(self.longest_msg)} chars{Fore.RESET}
