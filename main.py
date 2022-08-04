@@ -20,7 +20,7 @@ def frame_data(path: str):
     df = pd.DataFrame(columns=["timestamp", "user", "message"])
     for element in data:
         date, time, sender, message = element
-        if message == "<Media omitted>": message = ""
+        if message in ("<Media omitted>", "Missed voice call"): message = ""
         timestamp = dt.strptime(f"{date} {time}", "%m/%d/%y %I:%M %p")
         df.loc[len(df)] = [timestamp, sender, message]
 
