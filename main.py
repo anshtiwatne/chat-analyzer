@@ -86,15 +86,6 @@ TOP EMOJIS:\n{self.graph_freq(self.emoji_freq, padding=1)}
 Most active at: {self.color}{dt.strptime(f"{top_hour}", "%H").strftime("%I:%M %p")}{Fore.RESET}
 Avg msg sentiment: {self.color}{NotImplemented}{Fore.RESET}
 """
-def graph_freq(self, freq: Counter, padding: int = 8, scale: int = 100):
-        """Returns a Unicode bar graph for a given frequency distribution"""
-
-        graph = ""
-        total = sum(freq.values())
-        for element, count in freq.most_common(5):
-            len_line = int(round(count / total * scale))
-            graph += f"{element:<{padding}} | {self.color}{'▇'*len_line}{Fore.RESET} {count}\n"
-        return graph
 
 
 def main(df: pd.DataFrame):
