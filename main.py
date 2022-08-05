@@ -8,6 +8,23 @@ from colorama import Fore
 import emoji
 import pandas as pd
 
+ENG_COMMON_WORDS = [
+    #Articles
+    'a', 'an', 'the',
+    #Conjunctions
+    'for', 'and', 'nor', 'but', 'or', 'yet', 'so',
+    #Pronouns
+    'i', 'me', 'my', 'mine', 'myself', 'you', 'your', 'yours', 'yourself',
+    'he', 'him', 'his', 'himself', 'she', 'her', 'hers', 'herself', 'it',
+    'its', 'itself', 'we', 'us', 'our', 'ours', 'ourselves', 'yourselves',
+    'they', 'them', 'their', 'theirs', 'themselves', 'that',
+    #Prepositions
+    'above', 'across', 'against', 'along', 'among', 'around', 'at', 'before',
+    'behind', 'below', 'beneath', 'beside', 'between', 'by', 'down', 'from',
+    'in', 'into', 'near', 'of', 'off', 'on', 'to', 'toward', 'under', 'upon',
+    'with', 'within'
+]
+
 
 def frame_data(path: str):
     """Reads a WhatsApp chat export file and creates a dataframe"""
@@ -35,7 +52,7 @@ class User:
         self.username = username
         self.color = color
         self.longest_msg = max(df.loc[df["user"] == username]["message"], key=len)
-        self.word_freq = Counter(word.strip(r".,!\?;:()[]{}").lower() for msg in df.loc[df["user"] == username]["message"] for word in msg.split())
+        self.word_freq = Counter(word.strip(r".,!\?;:()[]{}").lower() for msg in df.loc[df["user"] == username]["message"] for word in msg.split() if word.lower() not in ENG_COMMON_WORDS)
         self.emoji_freq = Counter(char for msg in df.loc[df["user"] == username]["message"] for char in msg if emoji.is_emoji(char))
         self.hour_freq = Counter(dt.strftime(timestamp, "%H") for timestamp in df.loc[df["user"] == username]["timestamp"])
         self.num_messages = len(df.loc[df["user"] == username]["message"])
@@ -63,7 +80,7 @@ Avg msg length: {self.color}{self.avg_msg_len:.2f} {Fore.RESET}words
 Longest msg: {self.color}{len(self.longest_msg)}{Fore.RESET} chars
 Words sent: {self.color}{self.num_words}{Fore.RESET}
 Emojis sent: {self.color}{self.num_emojis}{Fore.RESET}
-\nTOP WORDS:\n{self.graph_freq(self.word_freq)}
+\nTOP WORDS:\n{self.graph_freq(self.word_freq, scale=150)}
 TOP EMOJIS:\n{self.graph_freq(self.emoji_freq, padding=1)}
 Most active at: {self.color}{dt.strptime(f"{top_hour}", "%H").strftime("%I:%M %p")}{Fore.RESET}
 Avg msg sentiment: {self.color}{"to do"}{Fore.RESET}
