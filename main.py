@@ -9,6 +9,7 @@ import emoji
 import pandas as pd
 
 DIVIDER = "="*48
+WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 ENG_COMMON_WORDS = [
     #Articles
     'a', 'an', 'the',
@@ -81,7 +82,7 @@ Avg msg length: {self.color}{self.avg_msg_len:.2f} {Fore.RESET}words
 Longest msg: {self.color}{len(self.longest_msg)}{Fore.RESET} chars
 Words sent: {self.color}{self.num_words}{Fore.RESET}
 Emojis sent: {self.color}{self.num_emojis}{Fore.RESET}
-\nTOP WORDS:\n{self.graph_freq(self.word_freq, scale=150)}
+\nTOP WORDS:\n{self.graph_freq(self.word_freq, scale=500)}
 TOP EMOJIS:\n{self.graph_freq(self.emoji_freq, padding=1)}
 Most active at: {self.color}{dt.strptime(f"{top_hour}", "%H").strftime("%I:%M %p")}{Fore.RESET}
 Avg msg sentiment: {self.color}{NotImplemented}{Fore.RESET}
@@ -108,12 +109,27 @@ def main(df: pd.DataFrame):
 
     total_msgs = sum(user.num_messages for user in users)
     msg_bar = [f"{user.color}{'▇'*int(round(user.num_messages / total_msgs * 50))}{Fore.RESET}" for user in users]
+    months_active = {dt.strftime(timestamp, "%b %y"):"" for timestamp in df["timestamp"]}
+    days_active = {dt.strftime(timestamp, "%a"):"" for timestamp in df["timestamp"]}
+
+    for user in users:
+        month_freq = Counter(dt.strftime(timestamp, "%b %y") for timestamp in df.loc[df["user"] == user.username]["timestamp"])
+        day_freq = Counter(dt.strftime(timestamp, "%a") for timestamp in df.loc[df["user"] == user.username]["timestamp"])
+        for month in month_freq:
+            months_active[month] += f"{user.color}{'▇'*int(round(month_freq[month] / total_msgs * 250))}{Fore.RESET}"
+        for day in day_freq:
+            days_active[day] += f"{user.color}{'▇'*int(round(day_freq[day] / total_msgs * 250))}{Fore.RESET}"
+    # sort days_active by weekdays
+    days_active = {day: days_active[day] for day in sorted(days_active, key=lambda day: WEEKDAYS.index(day))}
+
 
     print(f"""
 CHAT {" / ".join([f"{user.color}{user.username}{Fore.RESET}" for user in users])}\n{DIVIDER}\n
-Total words  | {''.join(msg_bar)} {':'.join([str(user.num_messages) for user in users])}
-Total emojis | {''.join(msg_bar)} {':'.join([str(user.num_emojis) for user in users])}
-\nTIMELINE:\n{NotImplemented}
+Total words  | {"".join(msg_bar)} {":".join([str(user.num_messages) for user in users])}
+Total emojis | {"".join(msg_bar)} {":".join([str(user.num_emojis) for user in users])}
+\nMost active day: {days_active[max(days_active, key=days_active.get)]}
+\nTIMELINE:\n{chr(10).join([f"{month} | {''.join(bar)}" for month, bar in months_active.items() if "▇" in bar])}
+\nACTIVITY BY WEEKDAY:\n{chr(10).join([f"{day} | {''.join(bar)}" for day, bar in days_active.items() if "▇" in bar])}
 """)
         
 
