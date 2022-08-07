@@ -1,14 +1,20 @@
 """Script to analyze WhatsApp chats"""
+# pylint: disable=invalid-name
 
-from collections import Counter
+from collections import Counter, OrderedDict
 from datetime import datetime as dt
+from importlib.metadata import distribution
 import re
 import colorama
 from colorama import Fore
 import emoji
 import pandas as pd
 
+DT_FORMAT = "%m/%d/%y %I:%M %p"
 DIVIDER = "="*48
+BAR_CHAR = "▇"
+AUTOMATED_MESSAGES = ["<Media omitted>", "Missed voice call"]
+PUNCTUATIONS = r".,!\?;:()[]{}"
 WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 ENG_COMMON_WORDS = [
     #Articles
@@ -32,15 +38,16 @@ def frame_data(path: str):
     """Reads a WhatsApp chat export file and creates a dataframe"""
 
     with open(path, "r", encoding="UTF8") as file:
-        # group1- date, group2- time, group3- sender, group4- message
-        pattern = r"(\d*?/\d*?/\d*?), (\d*?:\d*? [A, P]M) - (.*?): (.*)"
+        # groups: date, time,  sender, message
+        pattern = r"(\d*?/\d*?/\d*?), (\d*?:\d*?) ([Aa]|[Pp][Mm]) - (.*?): (.*)"
         data = re.findall(pattern, file.read())
 
     df = pd.DataFrame(columns=["timestamp", "user", "message"])
     for element in data:
-        date, time, sender, message = element
-        if message in ("<Media omitted>", "Missed voice call"): message = ""
-        timestamp = dt.strptime(f"{date} {time}", "%m/%d/%y %I:%M %p")
+        date, time, meridiem, sender, message = element
+        time = f"{time} {meridiem}"
+        if message in AUTOMATED_MESSAGES: message = ""
+        timestamp = pd.to_datetime(f"{date} {time}", format=DT_FORMAT)
         df.loc[len(df)] = [timestamp, sender, message]
 
     return df
@@ -54,9 +61,14 @@ class User:
         self.username = username
         self.color = color
         self.longest_msg = max(df.loc[df["user"] == username]["message"], key=len)
-        self.word_freq = Counter(word.strip(r".,!\?;:()[]{}").lower() for msg in df.loc[df["user"] == username]["message"] for word in msg.split() if word.lower() not in ENG_COMMON_WORDS)
+        self.word_freq = Counter(word.strip(PUNCTUATIONS).lower() for msg in df.loc[df["user"] == username]["message"] for word in msg.split() if word.lower() not in ENG_COMMON_WORDS)
         self.emoji_freq = Counter(char for msg in df.loc[df["user"] == username]["message"] for char in msg if emoji.is_emoji(char))
-        self.hour_freq = Counter(dt.strftime(timestamp, "%H") for timestamp in df.loc[df["user"] == username]["timestamp"])
+        self.hour_freq = Counter(dt.strftime(timestamp, "%I %p") for timestamp in df.loc[df["user"] == username]["timestamp"])
+        self.weekday_freq = Counter(dt.strftime(timestamp, "%a") for timestamp in df.loc[df["user"] == username]["timestamp"])
+        self.hour_freq = Counter(OrderedDict(sorted(self.hour_freq.items())))
+        self.weekday_freq = Counter(OrderedDict(sorted(self.weekday_freq.items(), key=lambda x: WEEKDAYS.index(x[0]))))
+        self.day_freq = Counter(dt.strftime(timestamp, "%d/%m/%y") for timestamp in df.loc[df["user"] == username]["timestamp"])
+        self.month_freq = Counter(dt.strftime(timestamp, "%b %y") for timestamp in df.loc[df["user"] == username]["timestamp"])
         self.num_messages = len(df.loc[df["user"] == username]["message"])
         self.num_words = sum(self.word_freq.values())
         self.num_emojis = sum(self.emoji_freq.values())
@@ -68,11 +80,11 @@ class User:
         graph = ""
         total = sum(freq.values())
         for element, count in freq.most_common(5):
-            len_line = int(round(count / total * scale))
-            graph += f"{element:<{padding}} | {self.color}{'▇'*len_line}{Fore.RESET} {count}\n"
+            len_bar = int(round(count / total * scale))
+            graph += f"{element:<{padding}} | {self.color}{BAR_CHAR*len_bar}{Fore.RESET} {count}\n"
         return graph
     
-    def __repr__(self):
+    def display(self):
         
         top_hour = self.hour_freq.most_common(1)[0][0]
         return f"""
@@ -84,57 +96,63 @@ Words sent: {self.color}{self.num_words}{Fore.RESET}
 Emojis sent: {self.color}{self.num_emojis}{Fore.RESET}
 \nTOP WORDS:\n{self.graph_freq(self.word_freq, scale=500)}
 TOP EMOJIS:\n{self.graph_freq(self.emoji_freq, padding=1)}
-Most active at: {self.color}{dt.strptime(f"{top_hour}", "%H").strftime("%I:%M %p")}{Fore.RESET}
+Most active at: {self.color}{top_hour}{Fore.RESET}
 Avg msg sentiment: {self.color}{NotImplemented}{Fore.RESET}
 """
+
+    def __repr__(self):
+        return self.username
+
+def stacked_graph(data: dict[str: Counter], padding: int = 8, scale: int = 100):
+    """Returns a Unicode bar graph for a given frequency distribution"""
+
+    graph = ""
+    freq_distribution = {element: [] for freq in data.values() for element in freq}
+    for user, freq in data.items():
+        for key, value in freq.items():
+            freq_distribution[key].append({user: value})
+    
+    total = sum(freq.total() for freq in data.values())
+    graph = ""
+    for element, distribution in freq_distribution.items():
+        bar = ""
+        for freq in distribution:
+            for user, count in freq.items():
+                len_bar = int(round(count / total * scale))
+                bar += f"{user.color}{BAR_CHAR*len_bar}{Fore.RESET}"
+        if BAR_CHAR in bar: graph += f"{element:<{padding}} | {bar}\n"
+    
+    return graph
 
 
 def main(df: pd.DataFrame):
     """Main function"""
-
-    users = []
-    usernames = [username for username in df["user"].unique()]
+    
     colors = [
         Fore.LIGHTRED_EX, Fore.LIGHTGREEN_EX, Fore.LIGHTYELLOW_EX,
-        Fore.LIGHTBLUE_EX, Fore.LIGHTMAGENTA_EX, Fore.LIGHTCYAN_EX
-    ]
-    
-    i = -1
-    for user in usernames:
-        i += 1
-        if i >= len(colors): i = 0
-        user = User(user, df, colors[i])
+        Fore.LIGHTBLUE_EX, Fore.LIGHTMAGENTA_EX, Fore.LIGHTCYAN_EX]
+
+    i = int() -1
+    users = list()
+    for username in df["user"].unique():
+        i = 0 if i >= len(colors) else i + 1
+        user = User(username, df, colors[i])
         users.append(user)
-        print(user)
-
-    total_msgs = sum(user.num_messages for user in users)
-    msg_bar = [f"{user.color}{'▇'*int(round(user.num_messages / total_msgs * 50))}{Fore.RESET}" for user in users]
-    months_active = {dt.strftime(timestamp, "%b %y"):"" for timestamp in df["timestamp"]}
-    days_active = {dt.strftime(timestamp, "%a"):"" for timestamp in df["timestamp"]}
-
-    for user in users:
-        month_freq = Counter(dt.strftime(timestamp, "%b %y") for timestamp in df.loc[df["user"] == user.username]["timestamp"])
-        day_freq = Counter(dt.strftime(timestamp, "%a") for timestamp in df.loc[df["user"] == user.username]["timestamp"])
-        for month in month_freq:
-            months_active[month] += f"{user.color}{'▇'*int(round(month_freq[month] / total_msgs * 250))}{Fore.RESET}"
-        for day in day_freq:
-            days_active[day] += f"{user.color}{'▇'*int(round(day_freq[day] / total_msgs * 250))}{Fore.RESET}"
-    # sort days_active by weekdays
-    days_active = {day: days_active[day] for day in sorted(days_active, key=lambda day: WEEKDAYS.index(day))}
-
+        print(user.display())
+    total_words = sum(user.num_words for user in users)
+    total_emojis = sum(user.num_emojis for user in users)
 
     print(f"""
-CHAT {" / ".join([f"{user.color}{user.username}{Fore.RESET}" for user in users])}\n{DIVIDER}\n
-Total words  | {"".join(msg_bar)} {":".join([str(user.num_messages) for user in users])}
-Total emojis | {"".join(msg_bar)} {":".join([str(user.num_emojis) for user in users])}
-\nMost active day: {days_active[max(days_active, key=days_active.get)]}
-\nTIMELINE:\n{chr(10).join([f"{month} | {''.join(bar)}" for month, bar in months_active.items() if "▇" in bar])}
-\nACTIVITY BY WEEKDAY:\n{chr(10).join([f"{day} | {''.join(bar)}" for day, bar in days_active.items() if "▇" in bar])}
-""")
-        
+{" / ".join(f"{user.color}{user.username.upper()}{Fore.RESET}" for user in users)} CHAT\n{DIVIDER}\n
+Total words  | {"".join([f"{user.color}{BAR_CHAR*int(round((user.num_words/total_words*32)))}{Fore.RESET}" for user in users])}
+Total emojis | {"".join([f"{user.color}{BAR_CHAR*int(round((user.num_emojis/total_emojis*32)))}{Fore.RESET}" for user in users])}\n
+TIMELINE:\n{stacked_graph({user: user.month_freq for user in users}, padding=1)}
+MOST ACTIVE DAY = {users[0].day_freq.most_common(1)[0][0]}\n
+AVTIVITY BY WEEKDAY:\n{stacked_graph({user: user.weekday_freq for user in users}, padding=1)}
+ACTIVITY BY HOUR:\n{stacked_graph({user: user.hour_freq for user in users}, padding=1)}
+""") # color most active day by user that sent most messages during that day
 
 
 if __name__ == "__main__":
     colorama.init(autoreset=True)
-    df = frame_data("testchat.txt")
-    main(df)
+    main(frame_data("testchat.txt"))
