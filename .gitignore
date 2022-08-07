@@ -131,4 +131,5 @@ dmypy.json
 # tests
 testchat.txt
 testchat2.txt
+testchat3.txt
 .vscode/

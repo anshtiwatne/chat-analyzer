@@ -8,6 +8,7 @@ import colorama
 from colorama import Fore
 import emoji
 import pandas as pd
+from textblob import TextBlob
 
 DT_FORMAT = "%m/%d/%y %I:%M %p"
 DIVIDER = "="*48
@@ -60,7 +61,7 @@ class User:
         self.username = username
         self.color = color
         self.longest_msg = max(df.loc[df["user"] == username]["message"], key=len)
-        self.word_freq = Counter(word.strip(PUNCTUATIONS).lower() for msg in df.loc[df["user"] == username]["message"] for word in msg.split() if word.lower() not in ENG_COMMON_WORDS)
+        self.word_freq = Counter(word.strip(PUNCTUATIONS+" ").lower() for msg in df.loc[df["user"] == username]["message"] for word in msg.split() if word.lower() not in ENG_COMMON_WORDS and not emoji.is_emoji(word))
         self.emoji_freq = Counter(char for msg in df.loc[df["user"] == username]["message"] for char in msg if emoji.is_emoji(char))
         self.hour_freq = Counter(dt.strftime(timestamp, "%I %p") for timestamp in df.loc[df["user"] == username]["timestamp"])
         self.weekday_freq = Counter(dt.strftime(timestamp, "%a") for timestamp in df.loc[df["user"] == username]["timestamp"])
@@ -72,6 +73,7 @@ class User:
         self.num_words = sum(self.word_freq.values())
         self.num_emojis = sum(self.emoji_freq.values())
         self.avg_msg_len = self.num_words/self.num_messages
+        self.sentiment_score = sum(TextBlob(msg).sentiment.polarity for msg in df.loc[df["user"] == username]["message"])/self.num_messages
 
     def graph_freq(self, freq: Counter, padding: int = 8, scale: int = 100):
         """Returns a Unicode bar graph for a given frequency distribution"""
@@ -96,7 +98,7 @@ Emojis sent: {self.color}{self.num_emojis}{Fore.RESET}
 \nTOP WORDS:\n{self.graph_freq(self.word_freq, scale=500)}
 TOP EMOJIS:\n{self.graph_freq(self.emoji_freq, padding=1)}
 Most active at: {self.color}{top_hour}{Fore.RESET}
-Avg msg sentiment: {self.color}{NotImplemented}{Fore.RESET}
+Avg msg sentiment: {self.color}{self.sentiment_score:.3f}{Fore.RESET}
 """
 
     def __repr__(self):
@@ -145,14 +147,15 @@ def main(df: pd.DataFrame):
     if total_emojis: emojis_sent = "".join([f"{user.color}{BAR_CHAR*int(round((user.num_emojis/total_emojis*32)))}{Fore.RESET}" for user in users])
 
     print(f"""
-{" / ".join(f"{user.color}{user.username.upper()}{Fore.RESET}" for user in users)} CHAT STATISTICS\n{DIVIDER}\n
+{" vs ".join(f"{user.color}{user.username.upper()}{Fore.RESET}" for user in users)} CHAT STATISTICS\n{DIVIDER}\n
 Words sent  | {words_sent}
 Emojis sent | {emojis_sent}\n
 TIMELINE:\n{stacked_graph({user: user.month_freq for user in users}, padding=1)}
 MOST ACTIVE DAY = {users[0].day_freq.most_common(1)[0][0]}\n
 AVTIVITY BY WEEKDAY:\n{stacked_graph({user: user.weekday_freq for user in users}, padding=1)}
 ACTIVITY BY HOUR:\n{stacked_graph({user: user.hour_freq for user in users}, padding=1)}
-Avg msg sentiment: {NotImplemented}
+Avg msg sentiment: {sum(user.sentiment_score for user in users)/len(users):.3f}
+(Positive > 0 > Negative)
 """) # color most active day by user that sent most messages during that day
 
 
