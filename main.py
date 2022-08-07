@@ -3,7 +3,6 @@
 
 from collections import Counter, OrderedDict
 from datetime import datetime as dt
-from importlib.metadata import distribution
 import re
 import colorama
 from colorama import Fore
@@ -141,18 +140,26 @@ def main(df: pd.DataFrame):
         print(user.display())
     total_words = sum(user.num_words for user in users)
     total_emojis = sum(user.num_emojis for user in users)
+    words_sent, emojis_sent = None, None
+    if total_words: words_sent = "".join([f"{user.color}{BAR_CHAR*int(round((user.num_words/total_words*32)))}{Fore.RESET}" for user in users])
+    if total_emojis: emojis_sent = "".join([f"{user.color}{BAR_CHAR*int(round((user.num_emojis/total_emojis*32)))}{Fore.RESET}" for user in users])
 
     print(f"""
-{" / ".join(f"{user.color}{user.username.upper()}{Fore.RESET}" for user in users)} CHAT\n{DIVIDER}\n
-Total words  | {"".join([f"{user.color}{BAR_CHAR*int(round((user.num_words/total_words*32)))}{Fore.RESET}" for user in users])}
-Total emojis | {"".join([f"{user.color}{BAR_CHAR*int(round((user.num_emojis/total_emojis*32)))}{Fore.RESET}" for user in users])}\n
+{" / ".join(f"{user.color}{user.username.upper()}{Fore.RESET}" for user in users)} CHAT STATISTICS\n{DIVIDER}\n
+Words sent  | {words_sent}
+Emojis sent | {emojis_sent}\n
 TIMELINE:\n{stacked_graph({user: user.month_freq for user in users}, padding=1)}
 MOST ACTIVE DAY = {users[0].day_freq.most_common(1)[0][0]}\n
 AVTIVITY BY WEEKDAY:\n{stacked_graph({user: user.weekday_freq for user in users}, padding=1)}
 ACTIVITY BY HOUR:\n{stacked_graph({user: user.hour_freq for user in users}, padding=1)}
+Avg msg sentiment: {NotImplemented}
 """) # color most active day by user that sent most messages during that day
 
 
 if __name__ == "__main__":
     colorama.init(autoreset=True)
-    main(frame_data("testchat.txt"))
+    chat_path = input("Enter path to chat file: ").strip().lower()
+    format_choice = input("Is the date formatted as day first?: ").strip().lower()
+    if format_choice == "y": DT_FORMAT = "%d/%m/%y %I:%M %p"
+    df = frame_data(chat_path)
+    main(df)
