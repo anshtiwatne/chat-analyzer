@@ -145,13 +145,15 @@ def main(df: pd.DataFrame):
     words_sent, emojis_sent = None, None
     if total_words: words_sent = "".join([f"{user.color}{BAR_CHAR*int(round((user.num_words/total_words*32)))}{Fore.RESET}" for user in users])
     if total_emojis: emojis_sent = "".join([f"{user.color}{BAR_CHAR*int(round((user.num_emojis/total_emojis*32)))}{Fore.RESET}" for user in users])
+    day_freq = Counter()
+    for user in users: day_freq += user.day_freq
 
     print(f"""
 {" vs ".join(f"{user.color}{user.username.upper()}{Fore.RESET}" for user in users)} CHAT STATISTICS\n{DIVIDER}\n
 Words sent  | {words_sent}
 Emojis sent | {emojis_sent}\n
 TIMELINE:\n{stacked_graph({user: user.month_freq for user in users}, padding=1)}
-MOST ACTIVE DAY = {users[0].day_freq.most_common(1)[0][0]}\n
+Most active day = {day_freq.most_common(1)[0][0]}\n
 AVTIVITY BY WEEKDAY:\n{stacked_graph({user: user.weekday_freq for user in users}, padding=1)}
 ACTIVITY BY HOUR:\n{stacked_graph({user: user.hour_freq for user in users}, padding=1)}
 Avg msg sentiment: {sum(user.sentiment_score for user in users)/len(users):.3f}
