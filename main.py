@@ -2,7 +2,6 @@
 # pylint: disable=invalid-name
 
 from collections import Counter, OrderedDict
-from datetime import datetime as dt
 import re
 import colorama
 from colorama import Fore
@@ -63,12 +62,12 @@ class User:
         self.longest_msg = max(df.loc[df["user"] == username]["message"], key=len)
         self.word_freq = Counter(word.strip(PUNCTUATIONS+" ").lower() for msg in df.loc[df["user"] == username]["message"] for word in msg.split() if word.lower() not in ENG_COMMON_WORDS and not emoji.is_emoji(word))
         self.emoji_freq = Counter(char for msg in df.loc[df["user"] == username]["message"] for char in msg if emoji.is_emoji(char))
-        self.hour_freq = Counter(dt.strftime(timestamp, "%I %p") for timestamp in df.loc[df["user"] == username]["timestamp"])
-        self.weekday_freq = Counter(dt.strftime(timestamp, "%a") for timestamp in df.loc[df["user"] == username]["timestamp"])
+        self.hour_freq = Counter(pd.Timestamp(timestamp).strftime("%I %p") for timestamp in df.loc[df["user"] == username]["timestamp"])
+        self.weekday_freq = Counter(pd.Timestamp(timestamp).strftime("%a") for timestamp in df.loc[df["user"] == username]["timestamp"])
         self.hour_freq = Counter(OrderedDict(sorted(self.hour_freq.items())))
         self.weekday_freq = Counter(OrderedDict(sorted(self.weekday_freq.items(), key=lambda x: WEEKDAYS.index(x[0]))))
-        self.day_freq = Counter(dt.strftime(timestamp, "%d/%m/%y") for timestamp in df.loc[df["user"] == username]["timestamp"])
-        self.month_freq = Counter(dt.strftime(timestamp, "%b %y") for timestamp in df.loc[df["user"] == username]["timestamp"])
+        self.day_freq = Counter(pd.Timestamp(timestamp).strftime("%d/%m/%y") for timestamp in df.loc[df["user"] == username]["timestamp"])
+        self.month_freq = Counter(pd.Timestamp(timestamp).strftime("%b %y") for timestamp in df.loc[df["user"] == username]["timestamp"])
         self.num_messages = len(df.loc[df["user"] == username]["message"])
         self.num_words = sum(self.word_freq.values())
         self.num_emojis = sum(self.emoji_freq.values())
@@ -140,6 +139,7 @@ def main(df: pd.DataFrame):
         user = User(username, df, colors[i])
         users.append(user)
         print(user.display())
+
     total_words = sum(user.num_words for user in users)
     total_emojis = sum(user.num_emojis for user in users)
     words_sent, emojis_sent = None, None
