@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Script to analyze WhatsApp chats"""
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name, multiple-statements, redefined-outer-name
 
 from collections import Counter, OrderedDict
 import colorama
@@ -40,7 +40,7 @@ def frame_data(path: str):
         # groups: date, time, meridiem, sender, message
         pattern = r"(\d*?/\d*?/\d*?), (\d*?:\d*?) ([Aa]|[Pp][Mm]) - (.*?): (.*)"
         data = pd.Series(file.read()).str.findall(pattern)[0]
-    
+
     df = pd.DataFrame(columns=["timestamp", "user", "message"])
     for element in data:
         date, time, meridiem, sender, message = element
@@ -88,9 +88,10 @@ class User:
             len_bar = int(round(count / total * scale))
             graph += f"{element:<{padding}} | {self.color}{BAR_CHAR*len_bar}{Fore.RESET} {count}\n"
         return graph
-    
+
     def display(self):
-        
+        """Displays user information"""
+    
         top_hour = self.hour_freq.most_common(1)[0][0]
         return f"""
 {self.username.upper()}{self.color}\n{DIVIDER}{Fore.RESET}
@@ -116,7 +117,7 @@ def stacked_graph(data: dict[str: Counter], padding: int = 8, scale: int = 100):
     for user, freq in data.items():
         for key, value in freq.items():
             freq_distribution[key].append({user: value})
-    
+ 
     total = sum(freq.total() for freq in data.values())
     graph = ""
     for element, distribution in freq_distribution.items():
@@ -127,13 +128,13 @@ def stacked_graph(data: dict[str: Counter], padding: int = 8, scale: int = 100):
                 bar += f"{user.color}{BAR_CHAR*len_bar}{Fore.RESET}"
         # only add the bar if it's not empty (the length was rounded to 0)
         if BAR_CHAR in bar: graph += f"{element:<{padding}} | {bar}\n"
-    
+
     return graph
 
 
 def main(df: pd.DataFrame):
     """Main function"""
-    
+
     colors = [
         Fore.LIGHTRED_EX, Fore.LIGHTGREEN_EX, Fore.LIGHTYELLOW_EX,
         Fore.LIGHTBLUE_EX, Fore.LIGHTMAGENTA_EX, Fore.LIGHTCYAN_EX]
