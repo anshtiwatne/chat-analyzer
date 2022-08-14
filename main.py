@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Script to analyze WhatsApp chats"""
 # pylint: disable=invalid-name
 

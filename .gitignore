@@ -129,7 +129,5 @@ dmypy.json
 .pyre/
 
 # tests
-testchat.txt
-testchat2.txt
-testchat3.txt
+testchats/
 .vscode/
