@@ -36,7 +36,7 @@ ENG_COMMON_WORDS = [
 def frame_data(path: str):
     """Scrapes Whatsapp chat export file and creates a dataframe"""
 
-    with open(path, "r", encoding="UTF8") as file:
+    with open(path, "r", encoding="utf-8") as file:
         # groups: date, time, meridiem, sender, message
         pattern = r"(\d*?/\d*?/\d*?), (\d*?:\d*?) ([Aa]|[Pp][Mm]) - (.*?): (.*)"
         data = pd.Series(file.read()).str.findall(pattern)[0]
@@ -139,11 +139,10 @@ def main(df: pd.DataFrame):
         Fore.LIGHTRED_EX, Fore.LIGHTGREEN_EX, Fore.LIGHTYELLOW_EX,
         Fore.LIGHTBLUE_EX, Fore.LIGHTMAGENTA_EX, Fore.LIGHTCYAN_EX]
 
-    i = int() -1
     users = list()
-    for username in df["user"].unique():
-        i = 0 if i >= len(colors) else i + 1
-        user = User(username, df, colors[i])
+    for i, username in enumerate(df["user"].unique()):
+        color = colors[i % len(colors)]
+        user = User(username, df, color)
         users.append(user)
         print(user.display())
 
@@ -169,9 +168,28 @@ Avg msg sentiment: {sum(user.sentiment_polarity for user in users)/len(users):.3
 
 
 if __name__ == "__main__":
+    import itertools
+    import threading
+    import time
+
     colorama.init(autoreset=True)
     chat_path = input("Enter path to chat file: ").strip().lower()
     format_choice = input("Is the date formatted as day first?: ").strip().lower()
+    
+    done = False
+    def progress_loop():
+        """Progress loop"""
+        animation = itertools.cycle([".  ", ".. ", "..."])
+        for char in animation:
+            if done: break
+            print(f"\rLoading {char}", end="", flush=True)
+            time.sleep(0.1)
+        print(f"\rDone!{' '*10}")
+    thread = threading.Thread(target=progress_loop)
+    thread.start()
+
     if format_choice == "y": DT_FORMAT = "%d/%m/%y %I:%M %p"
     df = frame_data(chat_path)
+    done = True
+    time.sleep(0.5)
     main(df)
