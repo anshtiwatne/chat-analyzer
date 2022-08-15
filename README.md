@@ -15,7 +15,7 @@ Is the date formatted as day first?: n
 
 ## Example
 
-example
+coming soon
 
 ## How it Works
 
