@@ -102,9 +102,12 @@ Words sent: {self.color}{self.num_words}{Fore.RESET}
 Emojis sent: {self.color}{self.num_emojis}{Fore.RESET}
 \nTOP WORDS:\n{self.graph_freq(self.word_freq, scale=500)}
 TOP EMOJIS:\n{self.graph_freq(self.emoji_freq, padding=1)}
+Top swear: {NotImplemented}
+Left on read coefficient: {NotImplemented}
 Most active at: {self.color}{top_hour}{Fore.RESET}
 Avg msg sentiment: {self.color}{self.sentiment_polarity:.3f}{Fore.RESET}
-"""
+""" # @rishi implement top swear
+    # @rohan implement left on read coefficient (you could use the diffence in time for 2 messages)
 
     def __repr__(self):
         return self.username
@@ -126,7 +129,7 @@ def stacked_graph(data: dict[str: Counter], padding: int = 8, scale: int = 100):
             for user, count in freq.items():
                 len_bar = int(round(count / total * scale))
                 bar += f"{user.color}{BAR_CHAR*len_bar}{Fore.RESET}"
-        # only add the bar if it's not empty (the length was rounded to 0)
+        # only add the bar if it's not empty (it's empty if the length was rounded to 0)
         if BAR_CHAR in bar: graph += f"{element:<{padding}} | {bar}\n"
 
     return graph
