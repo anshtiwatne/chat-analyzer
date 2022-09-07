@@ -78,6 +78,7 @@ class User:
         self.num_messages = len(_df)
         self.avg_msg_len = self.num_words / self.num_messages
         self.sentiment_polarity = sum(TextBlob(msg).sentiment.polarity for msg in _df["message"]) / self.num_messages
+        self.top_swear = min(_words, key = lambda word: TextBlob(word).sentiment.polarity)
 
     def graph_freq(self, freq: Counter, padding: int = 8, scale: int = 100):
         """Returns a Unicode bar graph for a given frequency distribution"""
@@ -102,12 +103,11 @@ Words sent: {self.color}{self.num_words}{Fore.RESET}
 Emojis sent: {self.color}{self.num_emojis}{Fore.RESET}
 \nTOP WORDS:\n{self.graph_freq(self.word_freq, scale=500)}
 TOP EMOJIS:\n{self.graph_freq(self.emoji_freq, padding=1)}
-Top swear: {NotImplemented}
-Left on read coefficient: {NotImplemented}
+Top swear: {self.color}{self.top_swear}{Fore.RESET}
+Left on read coefficient: {self.color}{NotImplemented}{Fore.RESET}
 Most active at: {self.color}{top_hour}{Fore.RESET}
 Avg msg sentiment: {self.color}{self.sentiment_polarity:.3f}{Fore.RESET}
-""" # @rishi implement top swear
-    # @rohan implement left on read coefficient (you could use the diffence in time for 2 messages)
+"""
 
     def __repr__(self):
         return self.username
