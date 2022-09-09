@@ -149,6 +149,7 @@ def stacked_graph(data: dict[str: Counter], padding: int = 8, scale: int = 100):
 def main(df: pd.DataFrame):
     """Main function"""
 
+    result = ""
     colors = [
         Fore.LIGHTRED_EX, Fore.LIGHTGREEN_EX, Fore.LIGHTYELLOW_EX,
         Fore.LIGHTBLUE_EX, Fore.LIGHTMAGENTA_EX, Fore.LIGHTCYAN_EX]
@@ -158,7 +159,7 @@ def main(df: pd.DataFrame):
         color = colors[i % len(colors)]
         user = User(username, df, color)
         users.append(user)
-        print(user.display())
+        result += user.display()
 
     total_words = sum(user.num_words for user in users)
     total_emojis = sum(user.num_emojis for user in users)
@@ -168,7 +169,7 @@ def main(df: pd.DataFrame):
     day_freq = Counter()
     for user in users: day_freq += user.day_freq
 
-    print(f"""
+    result += (f"""
 {" vs ".join(f"{user.color}{user.username.upper()}{Fore.RESET}" for user in users)} CHAT STATISTICS\n{DIVIDER}\n
 Words sent  | {words_sent}
 Emojis sent | {emojis_sent}\n
@@ -179,6 +180,8 @@ ACTIVITY BY HOUR:\n{stacked_graph({user: user.hour_freq for user in users}, padd
 Avg msg sentiment: {sum(user.sentiment_polarity for user in users)/len(users):.3f}
 (Positive > 0 > Negative)
 """) # color most active day by user that sent most messages during that day
+
+    return result
 
 
 if __name__ == "__main__":
