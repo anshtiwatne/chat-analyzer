@@ -9,7 +9,6 @@ import emoji
 import pandas as pd
 from textblob import TextBlob
 
-DT_FORMAT = "%m/%d/%y %I:%M %p"
 DIVIDER = "="*48
 BAR_CHAR = "▇"
 AUTOMATED_MESSAGES = ["<Media omitted>", "Missed voice call"]
@@ -41,6 +40,17 @@ def frame_data(path: str):
         pattern = r"(\d*?/\d*?/\d*?), (\d*?:\d*?) ([Aa]|[Pp][Mm]) - (.*?): (.*)"
         data = pd.Series(file.read()).str.findall(pattern)[0]
 
+    set1 = set()
+    set2 = set()
+    for element in data:
+        date, time, meridiem, sender, message = element
+        n1, n2, year = date.split("/")
+        set1.add(n1)
+        set2.add(n2)
+    if len(set1) > len(set2): DT_FORMAT = "%d/%m/%y %I:%M %p"
+    elif len(set1) < len(set2): DT_FORMAT = "%m/%d/%y %I:%M %p"
+    else: ValueError("unknown datetime fomat")
+
     df = pd.DataFrame(columns=["timestamp", "user", "message"])
     for element in data:
         date, time, meridiem, sender, message = element
@@ -60,7 +70,7 @@ class User:
         _df = df.loc[df["user"] == username]
         _words = [word.strip(PUNCTUATIONS+" ").lower() for msg in _df["message"] for word in msg.split()]
         _emojis = [char for msg in _df["message"] for char in msg if emoji.is_emoji(char)]
-        _words = [word for word in _words if word not in ENG_COMMON_WORDS]
+        _words = [word for word in _words if word.isalpha() and word not in ENG_COMMON_WORDS]
 
         self.username = username
         self.color = color
@@ -78,9 +88,10 @@ class User:
         self.num_messages = len(_df)
         self.avg_msg_len = self.num_words / self.num_messages
         self.sentiment_polarity = sum(TextBlob(msg).sentiment.polarity for msg in _df["message"]) / self.num_messages
-        self.top_swear = min(_words, key = lambda word: TextBlob(word).sentiment.polarity)
+        self.top_swear = min(_words, key = lambda word: TextBlob(word).sentiment.polarity) if _words else None
+        self.top_swear = self.top_swear if self.top_swear == None or TextBlob(self.top_swear).sentiment.polarity < 0 else None
 
-    def graph_freq(self, freq: Counter, padding: int = 8, scale: int = 100):
+    def graph_freq(self, freq: Counter, padding: int = 10, scale: int = 100):
         """Returns a Unicode bar graph for a given frequency distribution"""
 
         graph = ""
@@ -101,7 +112,7 @@ Avg msg length: {self.color}{self.avg_msg_len:.2f} {Fore.RESET}words
 Longest msg: {self.color}{len(self.longest_msg)}{Fore.RESET} chars
 Words sent: {self.color}{self.num_words}{Fore.RESET}
 Emojis sent: {self.color}{self.num_emojis}{Fore.RESET}
-\nTOP WORDS:\n{self.graph_freq(self.word_freq, scale=500)}
+\nTOP WORDS:\n{self.graph_freq(self.word_freq, scale=200)}
 TOP EMOJIS:\n{self.graph_freq(self.emoji_freq, padding=1)}
 Top swear: {self.color}{self.top_swear}{Fore.RESET}
 Left on read coefficient: {self.color}{NotImplemented}{Fore.RESET}
@@ -177,7 +188,7 @@ if __name__ == "__main__":
 
     colorama.init(autoreset=True)
     chat_path = input("Enter path to chat file: ").strip().lower()
-    format_choice = input("Is the date formatted as day first?: ").strip().lower()
+    # format_choice = input("Is the date formatted as day first?: ").strip().lower()
     
     done = False
     def progress_loop():
@@ -191,7 +202,7 @@ if __name__ == "__main__":
     thread = threading.Thread(target=progress_loop)
     thread.start()
 
-    if format_choice == "y": DT_FORMAT = "%d/%m/%y %I:%M %p"
+    # if format_choice == "y": DT_FORMAT = "%d/%m/%y %I:%M %p"
     df = frame_data(chat_path)
     done = True
     time.sleep(0.5)
