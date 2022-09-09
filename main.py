@@ -188,7 +188,6 @@ if __name__ == "__main__":
 
     colorama.init(autoreset=True)
     chat_path = input("Enter path to chat file: ").strip().lower()
-    # format_choice = input("Is the date formatted as day first?: ").strip().lower()
     
     done = False
     def progress_loop():
@@ -197,12 +196,11 @@ if __name__ == "__main__":
         for char in animation:
             if done: break
             print(f"\rLoading {char}", end="", flush=True)
-            time.sleep(0.1)
+            time.sleep(0.2)
         print(f"\rDone!{' '*10}")
     thread = threading.Thread(target=progress_loop)
     thread.start()
 
-    # if format_choice == "y": DT_FORMAT = "%d/%m/%y %I:%M %p"
     df = frame_data(chat_path)
     done = True
     time.sleep(0.5)
