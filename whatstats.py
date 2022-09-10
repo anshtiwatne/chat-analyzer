@@ -207,4 +207,4 @@ if __name__ == "__main__":
     df = frame_data(chat_path)
     done = True
     time.sleep(0.5)
-    main(df)
+    print(main(df))
