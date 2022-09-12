@@ -32,13 +32,8 @@ ENG_COMMON_WORDS = [
 ]
 
 
-def frame_data(path: str):
-    """Scrapes Whatsapp chat export file and creates a dataframe"""
-
-    with open(path, "r", encoding="utf-8") as file:
-        # groups: date, time, meridiem, sender, message
-        pattern = r"(\d*?/\d*?/\d*?), (\d*?:\d*?) ([Aa]|[Pp][Mm]) - (.*?): (.*)"
-        data = pd.Series(file.read()).str.findall(pattern)[0]
+def get_dt_format(data: pd.Series):
+    """Get the datetime format used in the chat file"""
 
     set1 = set()
     set2 = set()
@@ -47,16 +42,25 @@ def frame_data(path: str):
         n1, n2, year = date.split("/")
         set1.add(n1)
         set2.add(n2)
-    if len(set1) > len(set2): DT_FORMAT = "%d/%m/%y %I:%M %p"
-    elif len(set1) < len(set2): DT_FORMAT = "%m/%d/%y %I:%M %p"
-    else: ValueError("unknown datetime fomat")
+    if len(set1) > len(set2): return "%d/%m/%y %I:%M %p"
+    elif len(set1) < len(set2): return "%m/%d/%y %I:%M %p"
+    else: return ValueError("unknown datetime fomat")
+
+
+def frame_data(path: str):
+    """Scrapes Whatsapp chat export file and creates a dataframe"""
+
+    with open(path, "r", encoding="utf-8") as file:
+        # groups: date, time, meridiem, sender, message
+        pattern = r"(\d*?/\d*?/\d*?), (\d*?:\d*?) ([Aa]|[Pp][Mm]) - (.*?): (.*)"
+        data = pd.Series(file.read()).str.findall(pattern)[0]
 
     df = pd.DataFrame(columns=["timestamp", "user", "message"])
     for element in data:
         date, time, meridiem, sender, message = element
         time = f"{time} {meridiem}"
         if message in AUTOMATED_MESSAGES: message = ""
-        timestamp = pd.to_datetime(f"{date} {time}", format=DT_FORMAT)
+        timestamp = pd.to_datetime(f"{date} {time}", format=get_dt_format(data))
         df.loc[len(df)] = [timestamp, sender, message]
 
     return df
