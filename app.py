@@ -1,5 +1,5 @@
 from collections import Counter, OrderedDict
-import colorama
+# import colorama
 from colorama import Fore
 import emoji
 import flet
@@ -138,7 +138,7 @@ def main(page: flet.Page):
     selected_user_data = Column([Row([Text("Choose a file")])])
     page.overlay.append(pick_files_dialog)
 
-    btn = ElevatedButton("Pick files", icon=icons.UPLOAD_FILE, on_click=lambda _: pick_files_dialog.pick_files())
+    btn = ElevatedButton("Pick files", icon=icons.UPLOAD_FILE, on_click=lambda _: pick_files_dialog.pick_files(allowed_extensions=["txt"]))
     user_select = Dropdown(expand=True, disabled=True, hint_text="User", on_change=dropdown_change, icon=icons.FACE)
     page.add(Row([btn, filename, user_select]))
     page.add(selected_user_data)
