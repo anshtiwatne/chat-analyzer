@@ -106,8 +106,9 @@ class User:
             Row([Text("Longest msg:"), Text(self.avg_msg_len, color=self.color), Text("chars")]),
             Row([Text("Words sent:"), Text(self.num_words, color=self.color)]),
             Row([Text("Emojis sent:"), Text(self.num_emojis, color=self.color)]),
-            Text("\nTOP WORDS:")
-        ])
+            Text("\nTOP WORDS:"),
+            Text(NotImplemented)
+        ]) #width=600, alignment="center"
     
 
 def main(page: flet.Page):
@@ -134,17 +135,19 @@ def main(page: flet.Page):
     filename = Text(italic=True)
     path = Text()
     selected_user = ""
-    selected_user_data = Column([Row([Text("No user selected")])])
+    selected_user_data = Column([Row([Text("Choose a file")])])
     page.overlay.append(pick_files_dialog)
 
     btn = ElevatedButton("Pick files", icon=icons.UPLOAD_FILE, on_click=lambda _: pick_files_dialog.pick_files())
-    user_select = Dropdown(expand=True, disabled=True, hint_text="Choose a user", on_change=dropdown_change)
+    user_select = Dropdown(expand=True, disabled=True, hint_text="User", on_change=dropdown_change, icon=icons.FACE)
     page.add(Row([btn, filename, user_select]))
     page.add(selected_user_data)
     
     users = dict()
     def analyze_chat():
 
+        selected_user_data.controls = [ProgressBar()]
+        page.update()
         df = frame_data(path.value)
         colors = ["red", "green", "yellow", "blue", "magenta", "cyan"]
 
@@ -157,6 +160,7 @@ def main(page: flet.Page):
 
         user_select.options = options
         user_select.disabled = False
+        selected_user_data.controls = [Text("User not chosen")]
         page.update()
 
 flet.app(target=main)
