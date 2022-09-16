@@ -1,7 +1,4 @@
-from base64 import decode
 from collections import Counter, OrderedDict
-# import colorama
-from colorama import Fore
 import emoji
 import flet
 from flet import *
@@ -11,7 +8,7 @@ from textblob import TextBlob
 
 
 DIVIDER = "="*48
-BAR_CHAR = "▇"
+BAR_CHAR = "█"
 AUTOMATED_MESSAGES = ["<Media omitted>", "Missed voice call"]
 PUNCTUATIONS = r".,!\?;:()[]{}"
 WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -105,7 +102,7 @@ class User:
         words, bars = Column(spacing=0), Column(spacing=0)
         top = freq.most_common(1)[0][1]
         # total = sum(freq.values())
-        scale = page.width/50
+        scale = page.window_width/20
         for element, count in freq.most_common(5):
             len_bar = int(round(count / top * scale))
             words.controls.append(Row([Text(element)]))
@@ -136,7 +133,7 @@ class User:
 def stacked_graph(data: dict[str: Counter], title:str, page: Page):
     """Returns a Unicode bar graph for a given frequency distribution"""
 
-    scale = page.width/25
+    scale = page.window_width/10
     freq_distribution = {element: [] for freq in data.values() for element in freq}
     for user, freq in data.items():
         for key, value in freq.items():
@@ -192,11 +189,18 @@ def main(page: flet.Page):
     page.scroll = "always"
     appbar = AppBar(title=Text("WhatStats", style="headlineMedium"), center_title=True)
     page.add(appbar)
+    page.window_width = 360
+    page.window_height = 640
+    print(f"window: {page.window_width}x{page.window_height}")
+    # page.theme = Theme(font_family="Seoge UI", page_transitions="cupertino")
+    # page.update()
 
     def pick_files_result(e: FilePickerResultEvent):
         filename.value = " ,".join(map(lambda f: f.name, e.files)) if e.files else "Cancelled!"
         path.value = " ,".join(map(lambda f: f.path, e.files)) if e.files else None
+        btn.text = None
         print(f"{filename.value} loaded")
+        btn.update()
         filename.update()
         analyze_chat()
 
@@ -214,7 +218,7 @@ def main(page: flet.Page):
     page.overlay.append(pick_files_dialog)
 
     btn = ElevatedButton("Pick files", icon=icons.UPLOAD_FILE, on_click=lambda _: pick_files_dialog.pick_files(allowed_extensions=["txt"]))
-    user_select = Dropdown(expand=True, disabled=True, hint_text="User", on_change=dropdown_change, icon=icons.FACE)
+    user_select = Dropdown(expand=True, disabled=True, hint_text="User", on_change=dropdown_change)
     page.add(Row([btn, filename, user_select]))
     page.add(Divider())
     page.add(selected_user_data)
@@ -225,7 +229,7 @@ def main(page: flet.Page):
         selected_user_data.controls = [ProgressBar()]
         page.update()
         df = frame_data(path.value)
-        colors = ["red", "green", "blue", "yellow"]
+        colors = ["#1EB980", "#FF6859", "#FFCF44", "#B15DFF", "#72DEFF"]
         authors = list()
 
         options = list()
