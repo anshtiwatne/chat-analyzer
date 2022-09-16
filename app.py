@@ -102,7 +102,7 @@ class User:
         words, bars = Column(spacing=0), Column(spacing=0)
         top = freq.most_common(1)[0][1]
         # total = sum(freq.values())
-        scale = page.window_width/20
+        scale = page.window_width/22.5
         for element, count in freq.most_common(5):
             len_bar = int(round(count / top * scale))
             words.controls.append(Row([Text(element)]))
@@ -133,13 +133,14 @@ class User:
 def stacked_graph(data: dict[str: Counter], title:str, page: Page):
     """Returns a Unicode bar graph for a given frequency distribution"""
 
-    scale = page.window_width/10
+    scale = page.window_width/45
     freq_distribution = {element: [] for freq in data.values() for element in freq}
     for user, freq in data.items():
         for key, value in freq.items():
             freq_distribution[key].append({user: value})
  
     total = sum(freq.total() for freq in data.values())
+    top = freq.most_common(1)[0][1]
     graph = Column()
     elements, bars = Column(spacing=0), Column(spacing=0)
     title = title.title()
@@ -147,7 +148,7 @@ def stacked_graph(data: dict[str: Counter], title:str, page: Page):
         bar = Row(spacing=0)
         for freq in distribution:
             for user, count in freq.items():
-                len_bar = int(round(count / total * scale))
+                len_bar = int(round(count / top * scale))
                 bar.controls.append(Text(f"{BAR_CHAR*len_bar}", color=user.color))
         # only add the bar if it's not empty (it's empty if the length was rounded to 0)
         if len_bar >= 1:
@@ -162,11 +163,13 @@ def stacked_graph(data: dict[str: Counter], title:str, page: Page):
 def chat_stats(users: list[User], df: pd.DataFrame, page: Page):
     """chat statistics"""
 
+    if len(users) > 10: return Text("Choose a user")
+
     total_words = sum(user.num_words for user in users)
     total_emojis = sum(user.num_emojis for user in users)
     words_sent, emojis_sent = Row(), Row()
-    if total_words: words_sent = Row([Text(f"{BAR_CHAR*int(round(user.num_words/total_words*25))}", color=user.color) for user in users], spacing=0)
-    if total_emojis: emojis_sent = Row([Text(f"{BAR_CHAR*int(round(user.num_emojis/total_emojis*25))}", color=user.color) for user in users], spacing=0)
+    if total_words: words_sent = Row([Text(f"{BAR_CHAR*int(round(user.num_words/total_words*15))}", color=user.color) for user in users], spacing=0)
+    if total_emojis: emojis_sent = Row([Text(f"{BAR_CHAR*int(round(user.num_emojis/total_emojis*15))}", color=user.color) for user in users], spacing=0)
     day_freq = Counter()
     for user in users: day_freq += user.day_freq
 
