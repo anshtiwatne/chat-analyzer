@@ -41,6 +41,10 @@ def frame_data(path: str):
     return df
 ```
 
+## Screenshots
+
+<img width="254" alt="chat_stats" src="https://user-images.githubusercontent.com/83647366/198338642-b2185242-1b96-4cca-b5f5-fb43db8ea0ad.png"> <img width="254" alt="user_stats" src="https://user-images.githubusercontent.com/83647366/198338682-b2b856f3-9ff2-4408-a661-9a838fe13e10.png">
+
 ## License
 
 [MIT](https://github.com/anshunderscore/chat_analyzer/blob/main/LICENSE)
