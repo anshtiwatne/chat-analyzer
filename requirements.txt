@@ -1,5 +1,5 @@
 colorama==0.4.5
-emoji==2.1.0
+emoji==2.2.0
 pandas==1.5.1
 textblob==0.17.1
 flet==0.1.62
