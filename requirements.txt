@@ -1,4 +1,4 @@
-colorama==0.4.5
+colorama==0.4.6
 emoji==2.2.0
 pandas==1.5.1
 textblob==0.17.1
