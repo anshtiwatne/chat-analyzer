@@ -33,8 +33,8 @@ def get_dt_format(data: pd.Series):
 
     set1, set2 = set(), set() # month and year sets
     for element in data:
-        date, time, meridiem, sender, message = element
-        n1, n2, year = date.split("/")
+        date = element[0]
+        n1, n2, _ = date.split("/")
         set1.add(n1)
         set2.add(n2)
     if len(set1) > len(set2): return "%d/%m/%y %I:%M %p"
@@ -118,7 +118,7 @@ class User:
             ft.Row([ft.Text("Words sent:"), ft.Text(self.num_words, color=self.color)]),
             ft.Row([ft.Text("Emojis sent:"), ft.Text(self.num_emojis, color=self.color)]),
             self.graph_freq(self.word_freq, "top words", page),
-            self.graph_freq(self.emoji_freq, "top emojs", page),
+            self.graph_freq(self.emoji_freq, "top emojis", page),
             ft.Row([ft.Text("Top swear:"), ft.Text(self.top_swear if self.top_swear != None else "None", color=self.color)]),
             ft.Row([ft.Text("Left on read coefficient:"), ft.Text(NotImplemented, color=self.color)]),
             ft.Row([ft.Text("Most active at:"), ft.Text(self.top_hour, color=self.color)]),
@@ -136,7 +136,7 @@ def stacked_graph(data: dict[str: Counter], title:str, page: ft.Page):
         for key, value in freq.items():
             freq_distribution[key].append({user: value})
  
-    total = sum(freq.total() for freq in data.values())
+    # total = sum(freq.total() for freq in data.values())
     top = freq.most_common(1)[0][1]
     graph = ft.Column()
     elements, bars = ft.Column(spacing=0), ft.Column(spacing=0)
