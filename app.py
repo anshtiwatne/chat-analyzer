@@ -1,11 +1,10 @@
+#!/usr/bin/env python3
+
 from collections import Counter, OrderedDict
 import emoji
-import flet
-from flet import *
-from flet import icons, dropdown, colors
+import flet as ft
 import pandas as pd
 from textblob import TextBlob
-
 
 DIVIDER = "="*48
 BAR_CHAR = "█"
@@ -29,12 +28,10 @@ ENG_COMMON_WORDS = [
     'with', 'within'
 ]
 
-
 def get_dt_format(data: pd.Series):
     """Get the datetime format used in the chat file"""
 
-    set1 = set()
-    set2 = set()
+    set1, set2 = set(), set() # month and year sets
     for element in data:
         date, time, meridiem, sender, message = element
         n1, n2, year = date.split("/")
@@ -42,7 +39,7 @@ def get_dt_format(data: pd.Series):
         set2.add(n2)
     if len(set1) > len(set2): return "%d/%m/%y %I:%M %p"
     elif len(set1) < len(set2): return "%m/%d/%y %I:%M %p"
-    else: return ValueError("unknown datetime fomat")
+    else: return ValueError("unknown datetime format")
 
 
 def frame_data(path: str):
@@ -50,7 +47,7 @@ def frame_data(path: str):
 
     with open(path, "r", encoding="utf-8") as file:
         # groups: date, time, meridiem, sender, message
-        pattern = r"(\d*?/\d*?/\d*?), (\d*?:\d*?) ([Aa]|[Pp][Mm]) - (.*?): (.*)"
+        pattern = r"(\d*?/\d*?/\d*?), (\d*?:\d*?)\s([Aa]|[Pp][Mm]) - (.*?): (.*)"
         data = pd.Series(file.read()).str.findall(pattern)[0]
 
     df = pd.DataFrame(columns=["timestamp", "user", "message"])
@@ -61,11 +58,11 @@ def frame_data(path: str):
         timestamp = pd.to_datetime(f"{date} {time}", format=get_dt_format(data))
         df.loc[len(df)] = [timestamp, sender, message]
 
+    if not df.empty: print("dataframe generated")
     return df
 
-
 class User:
-    """Class to represent a user"""
+    """Class to represent a chat user"""
 
     def __init__(self, username: str, df: pd.DataFrame, color: str = None):
 
@@ -94,43 +91,43 @@ class User:
         self.top_swear = self.top_swear if self.top_swear == None or TextBlob(self.top_swear).sentiment.polarity < 0 else None
         self.top_hour = self.hour_freq.most_common(1)[0][0]
 
-    def graph_freq(self, freq: Counter, title: str, page: Page):
+    def graph_freq(self, freq: Counter, title: str, page: ft.Page):
         """Returns a Unicode bar graph for a given frequency distribution"""
 
-        if not freq: return Text(None)
+        if not freq: return ft.Text(None)
         title = title.title()
-        words, bars = Column(spacing=0), Column(spacing=0)
+        words, bars = ft.Column(spacing=0), ft.Column(spacing=0)
         top = freq.most_common(1)[0][1]
         # total = sum(freq.values())
         scale = page.window_width/22.5
         for element, count in freq.most_common(5):
             len_bar = int(round(count / top * scale))
-            words.controls.append(Row([Text(element)]))
-            bars.controls.append(Row([Text("|"), Text(BAR_CHAR*len_bar, color=self.color), Text(count)]))
+            words.controls.append(ft.Row([ft.Text(element)]))
+            bars.controls.append(ft.Row([ft.Text("|"), ft.Text(BAR_CHAR*len_bar, color=self.color, ), ft.Text(count)]))
         
-        graph = Column([Row([Text(title)], alignment="center"), Row([words, bars])])
+        graph = ft.Column([ft.Row([ft.Text(title)], alignment="center"), ft.Row([words, bars])])
         return graph
 
-    def display(self, page: Page):
+    def display(self, page: ft.Page):
         """Displays user information"""
 
-        return Column([
-            Row([Text("Messages sent:"), Text(self.num_messages, color=self.color)]),
-            Row([Text("Avg msg length:"), Text(round(self.avg_msg_len, 2), color=self.color), Text("words")]),
-            Row([Text("Longest msg:"), Text(len(self.longest_msg), color=self.color), Text("chars")]),
-            Row([Text("Words sent:"), Text(self.num_words, color=self.color)]),
-            Row([Text("Emojis sent:"), Text(self.num_emojis, color=self.color)]),
+        return ft.Column([
+            ft.Row([ft.Text("Messages sent:"), ft.Text(self.num_messages, color=self.color)]),
+            ft.Row([ft.Text("Avg msg length:"), ft.Text(round(self.avg_msg_len, 2), color=self.color), ft.Text("words")]),
+            ft.Row([ft.Text("Longest msg:"), ft.Text(len(self.longest_msg), color=self.color), ft.Text("chars")]),
+            ft.Row([ft.Text("Words sent:"), ft.Text(self.num_words, color=self.color)]),
+            ft.Row([ft.Text("Emojis sent:"), ft.Text(self.num_emojis, color=self.color)]),
             self.graph_freq(self.word_freq, "top words", page),
             self.graph_freq(self.emoji_freq, "top emojs", page),
-            Row([Text("Top swear:"), Text(self.top_swear if self.top_swear != None else "None", color=self.color)]),
-            Row([Text("Left on read coefficient:"), Text(NotImplemented, color=self.color)]),
-            Row([Text("Most active at:"), Text(self.top_hour, color=self.color)]),
-            Row([Text("Average message sentiment:"), Text(round(self.sentiment_polarity, 2), color=self.color)])
+            ft.Row([ft.Text("Top swear:"), ft.Text(self.top_swear if self.top_swear != None else "None", color=self.color)]),
+            ft.Row([ft.Text("Left on read coefficient:"), ft.Text(NotImplemented, color=self.color)]),
+            ft.Row([ft.Text("Most active at:"), ft.Text(self.top_hour, color=self.color)]),
+            ft.Row([ft.Text("Average message sentiment:"), ft.Text(round(self.sentiment_polarity, 2), color=self.color)])
             # self.graph_freq(self.emoji_freq, "top emojis")
         ]) #width=600, alignment="center"
 
 
-def stacked_graph(data: dict[str: Counter], title:str, page: Page):
+def stacked_graph(data: dict[str: Counter], title:str, page: ft.Page):
     """Returns a Unicode bar graph for a given frequency distribution"""
 
     scale = page.window_width/45
@@ -141,70 +138,67 @@ def stacked_graph(data: dict[str: Counter], title:str, page: Page):
  
     total = sum(freq.total() for freq in data.values())
     top = freq.most_common(1)[0][1]
-    graph = Column()
-    elements, bars = Column(spacing=0), Column(spacing=0)
+    graph = ft.Column()
+    elements, bars = ft.Column(spacing=0), ft.Column(spacing=0)
     title = title.title()
     for element, distribution in freq_distribution.items():
-        bar = Row(spacing=0)
+        bar = ft.Row(spacing=0)
         for freq in distribution:
             for user, count in freq.items():
                 len_bar = int(round(count / top * scale))
-                bar.controls.append(Text(f"{BAR_CHAR*len_bar}", color=user.color))
+                bar.controls.append(ft.Text(f"{BAR_CHAR*len_bar}", color=user.color))
         # only add the bar if it's not empty (it's empty if the length was rounded to 0)
         if len_bar >= 1:
-            elements.controls.append(Text(element))
+            elements.controls.append(ft.Text(element))
             bars.controls.append(bar)
         
-        graph = Column([Row([Text(title)], alignment="center"), Row([elements, bars])])
+        graph = ft.Column([ft.Row([ft.Text(title)], alignment="center"), ft.Row([elements, bars])])
 
     return graph
 
 
-def chat_stats(users: list[User], df: pd.DataFrame, page: Page):
+def chat_stats(users: list[User], df: pd.DataFrame, page: ft.Page):
     """chat statistics"""
 
-    if len(users) > 10: return Text("Choose a user")
+    if len(users) > 10: return ft.Text("Choose a user")
 
     total_words = sum(user.num_words for user in users)
     total_emojis = sum(user.num_emojis for user in users)
-    words_sent, emojis_sent = Row(), Row()
-    if total_words: words_sent = Row([Text(f"{BAR_CHAR*int(round(user.num_words/total_words*15))}", color=user.color) for user in users], spacing=0)
-    if total_emojis: emojis_sent = Row([Text(f"{BAR_CHAR*int(round(user.num_emojis/total_emojis*15))}", color=user.color) for user in users], spacing=0)
+    words_sent, emojis_sent = ft.Row(), ft.Row()
+    if total_words: words_sent = ft.Row([ft.Text(f"{BAR_CHAR*int(round(user.num_words/total_words*15))}", color=user.color) for user in users], spacing=0)
+    if total_emojis: emojis_sent = ft.Row([ft.Text(f"{BAR_CHAR*int(round(user.num_emojis/total_emojis*15))}", color=user.color) for user in users], spacing=0)
     day_freq = Counter()
     for user in users: day_freq += user.day_freq
 
-    return Column([
-        Row([Text("Words sent |"), words_sent]),
-        Row([Text("Emojis sent |"), emojis_sent]),
+    return ft.Column([
+        ft.Row([ft.Text("Words sent |"), words_sent]),
+        ft.Row([ft.Text("Emojis sent |"), emojis_sent]),
         stacked_graph({user: user.month_freq for user in users}, "timeline", page),
-        Row([Text("Most active day:"), Text(day_freq.most_common(1)[0][0], color=None)]), # color by top user that day
+        ft.Row([ft.Text("Most active day:"), ft.Text(day_freq.most_common(1)[0][0], color=None)]), # color by top user that day
         stacked_graph({user: user.weekday_freq for user in users}, "activity by weekday", page),
         stacked_graph({user: user.hour_freq for user in users}, "activity by hour", page),
-        Row([Text("Average message sentiment:"), Text(round(sum(user.sentiment_polarity for user in users)/len(users), 2))]), # color by top user sentiment
-        Row([Text("(Positive > 0 > Negative)")])
+        ft.Row([ft.Text("Average message sentiment:"), ft.Text(round(sum(user.sentiment_polarity for user in users)/len(users), 2))]), # color by top user sentiment
+        ft.Row([ft.Text("(Positive > 0 > Negative)")])
     ])
 
 
-def main(page: flet.Page):
+def main(page: ft.Page):
     """flet app"""
 
     page.title = "WhatStats"
     page.scroll = "always"
-    appbar = AppBar(title=Text("WhatStats", style="headlineMedium"), center_title=True)
+    appbar = ft.AppBar(title=ft.Text("WhatStats", style="headlineMedium"), center_title=True)
     page.add(appbar)
     page.window_width = 360
     page.window_height = 640
     print(f"window: {page.window_width}x{page.window_height}")
-    # page.theme = Theme(font_family="Seoge UI", page_transitions="cupertino")
-    # page.update()
 
-    def pick_files_result(e: FilePickerResultEvent):
+    def pick_files_result(e: ft.FilePickerResultEvent):
         filename.value = " ,".join(map(lambda f: f.name, e.files)) if e.files else "Cancelled!"
         path.value = " ,".join(map(lambda f: f.path, e.files)) if e.files else None
-        btn.text = None
+        btn.text = filename.value
         print(f"{filename.value} loaded")
         btn.update()
-        filename.update()
         analyze_chat()
 
     def dropdown_change(e):
@@ -213,23 +207,23 @@ def main(page: flet.Page):
         page.update()
         print(f"user changed to: {selected_user}")
 
-    pick_files_dialog = FilePicker(on_result=pick_files_result)
-    filename = Text(italic=True)
-    path = Text()
+    pick_files_dialog = ft.FilePicker(on_result=pick_files_result)
+    filename = ft.Text(italic=True)
+    path = ft.Text()
     selected_user = ""
-    selected_user_data = Column([Row([Text("Choose a file")])])
+    selected_user_data = ft.Column([ft.Row([ft.Text("Choose a file")])])
     page.overlay.append(pick_files_dialog)
 
-    btn = ElevatedButton("Pick files", icon=icons.UPLOAD_FILE, on_click=lambda _: pick_files_dialog.pick_files(allowed_extensions=["txt"]))
-    user_select = Dropdown(expand=True, disabled=True, hint_text="User", on_change=dropdown_change)
-    page.add(Row([btn, filename, user_select]))
-    page.add(Divider())
+    btn = ft.ElevatedButton("Pick files", icon=ft.icons.UPLOAD_FILE, on_click=lambda _: pick_files_dialog.pick_files(allowed_extensions=["txt"]))
+    user_select = ft.Dropdown(expand=True, disabled=True, hint_text="User", on_change=dropdown_change)
+    page.add(ft.Row([btn, user_select]))
+    page.add(ft.Divider())
     page.add(selected_user_data)
     
     users = dict()
     def analyze_chat():
 
-        selected_user_data.controls = [ProgressBar()]
+        selected_user_data.controls = [ft.ProgressBar()]
         page.update()
         df = frame_data(path.value)
         colors = ["#1EB980", "#FF6859", "#FFCF44", "#B15DFF", "#72DEFF"]
@@ -241,13 +235,13 @@ def main(page: flet.Page):
             user = User(username, df, color)
             authors.append(user)
             users[username] = user.display(page)
-            options.append(dropdown.Option(username))
+            options.append(ft.dropdown.Option(username))
 
         print("analysis complete")
         selected_user_data.controls = [chat_stats(authors, df, page)]
         user_select.options = options
         user_select.disabled = False
-        # selected_user_data.controls = [Text("CHAT STATISTICS")]
+        # selected_user_data.controls = [ft.Text("CHAT STATISTICS")]
         page.update()
 
-flet.app(target=main)
+ft.app(target=main)

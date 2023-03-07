@@ -10,7 +10,7 @@ import pandas as pd
 from textblob import TextBlob
 
 DIVIDER = "="*48
-BAR_CHAR = "▇"
+BAR_CHAR = "█"
 AUTOMATED_MESSAGES = ["<Media omitted>", "Missed voice call"]
 PUNCTUATIONS = r".,!\?;:()[]{}"
 WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -52,17 +52,20 @@ def frame_data(path: str):
 
     with open(path, "r", encoding="utf-8") as file:
         # groups: date, time, meridiem, sender, message
-        pattern = r"(\d*?/\d*?/\d*?), (\d*?:\d*?) ([Aa]|[Pp][Mm]) - (.*?): (.*)"
+        pattern = r"(\d*?/\d*?/\d*?), (\d*?:\d*?)\s([Aa]|[Pp][Mm]) - (.*?): (.*)"
         data = pd.Series(file.read()).str.findall(pattern)[0]
 
     df = pd.DataFrame(columns=["timestamp", "user", "message"])
+    dt_format = "%m/%d/%y %I:%M %p"
     for element in data:
         date, time, meridiem, sender, message = element
+        # print(element)
         time = f"{time} {meridiem}"
         if message in AUTOMATED_MESSAGES: message = ""
-        timestamp = pd.to_datetime(f"{date} {time}", format=get_dt_format(data))
+        timestamp = pd.to_datetime(f"{date} {time}", format=dt_format)
         df.loc[len(df)] = [timestamp, sender, message]
-
+    # print(dt_format)
+    # print(df)
     return df
 
 
@@ -178,6 +181,7 @@ def main(df: pd.DataFrame):
 Words sent  | {words_sent}
 Emojis sent | {emojis_sent}\n
 TIMELINE:\n{stacked_graph({user: user.month_freq for user in users}, padding=1)}
+{print(day_freq.most_common())}
 Most active day = {day_freq.most_common(1)[0][0]}\n
 AVTIVITY BY WEEKDAY:\n{stacked_graph({user: user.weekday_freq for user in users}, padding=1)}
 ACTIVITY BY HOUR:\n{stacked_graph({user: user.hour_freq for user in users}, padding=1)}
